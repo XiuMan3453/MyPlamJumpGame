@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -36,8 +37,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private int score = 0;
     private Random rand = new Random();
 
-    public GameView(Context context) {
-        super(context);
+    public GameView(Context context, AttributeSet attrs) {
+        super(context, attrs);
         holder = getHolder();
         holder.addCallback(this);
         updateScreenDimensions();
@@ -164,6 +165,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
     }
 
+    private boolean isRightPressed = false;
+    private boolean isLeftPressed = false;
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         int action = event.getAction();
@@ -172,24 +175,63 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         switch (action) {
             case MotionEvent.ACTION_DOWN:
-            case MotionEvent.ACTION_MOVE:
-                // 检测触摸区域
+                // 检测按下的是哪个按钮
                 if (leftButton.contains((int) touchX, (int) touchY)) {
+                    isLeftPressed = true;
                     player.moveLeft();
                 } else if (rightButton.contains((int) touchX, (int) touchY)) {
+                    isRightPressed = true;
                     player.moveRight();
-                } else if (jumpButton.contains((int) touchX, (int) touchY)) {
-                    player.jump();
+                }else if (jumpButton.contains((int) touchX, (int) touchY)) {
+                    player.jump(); // 跳跃立即触发
+                }
+                return true;
+                    case MotionEvent.ACTION_POINTER_DOWN:
+                if (jumpButton.contains((int) touchX, (int) touchY)) {
+                    player.jump(); // 跳跃立即触发
+                }
+                return true;
+
+            case MotionEvent.ACTION_MOVE:
+                // 处理多点触摸时的移动状态更新
+                for (int i = 0; i < event.getPointerCount(); i++) {
+                    float moveX = event.getX(i);
+                    float moveY = event.getY(i);
+
+                    if (leftButton.contains((int) moveX, (int) moveY)) {
+                        isLeftPressed = true;
+                        isRightPressed = false;
+                        player.moveLeft();
+                    } else if (rightButton.contains((int) moveX, (int) moveY)) {
+                        isRightPressed = true;
+                        isLeftPressed = false;
+                        player.moveRight();
+                    }
+                    if (jumpButton.contains((int) touchX, (int) touchY)) {
+                        player.jump(); // 跳跃立即触发
+                    }
                 }
                 return true;
 
             case MotionEvent.ACTION_UP:
-                // 松开时停止移动
-                player.stopMoving();
+            case MotionEvent.ACTION_POINTER_UP:
+                // 松开时检查哪个按钮被释放
+                if (leftButton.contains((int) touchX, (int) touchY)) {
+                    isLeftPressed = false;
+                } else if (rightButton.contains((int) touchX, (int) touchY)) {
+                    isRightPressed = false;
+                }
+
+                // 如果左右按钮都释放，才停止移动
+                if (!isLeftPressed && !isRightPressed) {
+                    player.stopMoving();
+                }
                 return true;
         }
         return super.onTouchEvent(event);
+
     }
+
 
     private void checkCollisions() {
         for (Platform platform : platforms) {
