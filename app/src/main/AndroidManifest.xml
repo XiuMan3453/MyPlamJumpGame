@@ -1,23 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.myplamjumpgame">
 
-    <application
-        android:theme="@style/Theme.MyPlamJumpGame">
+    <application android:theme="@style/Theme.MyPlamJumpGame">
+        <activity
+            android:name=".GameOverActivity"
+            android:exported="true"
+            android:screenOrientation="reverseLandscape">
+        </activity>
         <!-- 主界面Activity -->
         <activity
             android:name=".MainActivity"
-            android:screenOrientation="reverseLandscape"
-            android:exported="true">
+            android:exported="true"
+            android:screenOrientation="reverseLandscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-
-        <!-- 游戏界面Activity -->
+        </activity> <!-- 游戏界面Activity -->
         <activity
             android:name=".game"
-            android:screenOrientation="reverseLandscape"
-            android:configChanges="orientation|screenSize"/>
+            android:configChanges="orientation|screenSize"
+            android:screenOrientation="reverseLandscape" />
     </application>
+
 </manifest>

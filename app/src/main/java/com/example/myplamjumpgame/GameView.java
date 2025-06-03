@@ -1,6 +1,8 @@
 package com.example.myplamjumpgame;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -11,6 +13,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -22,9 +25,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private SurfaceHolder holder;
     private boolean isRunning = false;
     // 按键区域定义
-    private Rect leftButton = new Rect();
-    private Rect rightButton = new Rect();
-    private Rect jumpButton = new Rect();
+
     private Player player;
     private List<Platform> platforms;
     private Platform currentPlatform; // 当前玩家所在的平台
@@ -36,6 +37,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private List<Strawberry> strawberries = new ArrayList<>();
     private int score = 0;
     private Random rand = new Random();
+    private Platform lastPlatform = null;
+
+    private List<ScoreEffect> scoreEffects = new ArrayList<>();
 
     public GameView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -62,7 +66,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         int startY = (int) (TARGET_Y_OFFSET);
         player = new Player(startX, startY);
         platforms = new ArrayList<>();
-        platforms.add(new Platform(startX, startY + 50, 200)); // 初始平台
+        PlatformType type = PlatformType.NORMAL;
+        platforms.add(new Platform(startX, startY + 50, 200, type)); // 初始平台
     }
 
     @Override
@@ -100,38 +105,63 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         player.update();
         checkCollisions();
         checkStrawberryCollisions();
+        updateScoreEffects();
 
         // 使用线性插值实现平滑移动
         cameraX = player.getX() - TARGET_X_OFFSET;
         cameraY = player.getY() - TARGET_Y_OFFSET;
 
+
+        if (player.getY() > getHeight() - 250) {
+            handlePlayerDeath();
+            return;
+        }
+
     }
-    // 绘制按键
 
-    private void drawButtons(Canvas canvas) {
-        // 按钮区域定义（基于屏幕固定位置）
-        int buttonSize = 150;
-        int buttonBottom = getHeight() - 50;
-        int buttonTop = buttonBottom - buttonSize;
+    // 添加新特效
+    private void addScoreEffect(int score, int color) {
+        String text = "+" + score;
+        scoreEffects.add(new ScoreEffect(
+                player.getX() - cameraX  + 20,
+                player.getY() - cameraY,
+                text,
+                color
+        ));
+    }
 
-        leftButton.set(50, buttonTop, 50 + buttonSize, buttonBottom);
-        rightButton.set(250, buttonTop, 250 + buttonSize, buttonBottom);
-        jumpButton.set(getWidth() - 200, buttonTop, getWidth() - 50, buttonBottom);
+    // 更新所有特效
+    private void updateScoreEffects() {
+        Iterator<ScoreEffect> it = scoreEffects.iterator();
+        while (it.hasNext()) {
+            if (!it.next().update()) {
+                it.remove(); // 移除已完成特效
+            }
+        }
+    }
 
-        // 绘制按钮（直接使用屏幕坐标，无需偏移）
-        Paint buttonPaint = new Paint();
-        buttonPaint.setColor(Color.argb(100, 0, 0, 255));
-        canvas.drawRect(leftButton, buttonPaint);
-        canvas.drawRect(rightButton, buttonPaint);
-        canvas.drawRect(jumpButton, buttonPaint);
+    private void handleScore(int bonus) {
+        score += bonus;
+        int color = Color.WHITE;
+        if(bonus == 1){
+            color = Color.GREEN;
+        } else if(bonus == 5){
+            color = Color.RED;
+        } else if (bonus == 10) {
+            color = Color.YELLOW;
+        } else if (bonus == 15) {
+            color = Color.BLUE;
+        } else if (bonus == 20) {
+            color = Color.CYAN;
+        }
+        addScoreEffect(bonus, color); // 彩色特效
+    }
 
-        // 绘制按钮文字
-        Paint textPaint = new Paint();
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(60);
-        canvas.drawText("←", leftButton.centerX() - 20, leftButton.centerY() + 20, textPaint);
-        canvas.drawText("→", rightButton.centerX() - 20, rightButton.centerY() + 20, textPaint);
-        canvas.drawText("↑", jumpButton.centerX() - 20, jumpButton.centerY() + 20, textPaint);
+    // 绘制所有特效
+    private void drawScoreEffects(Canvas canvas) {
+        for (ScoreEffect effect : scoreEffects) {
+            effect.draw(canvas);
+        }
     }
 
     private void draw() {
@@ -153,7 +183,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         scorePaint.setColor(Color.BLACK);
         scorePaint.setTextSize(80);
         canvas.drawText("分数: " + score, 50, 100, scorePaint);
-        drawButtons(canvas);
+        drawScoreEffects(canvas);
         holder.unlockCanvasAndPost(canvas);
     }
 
@@ -165,71 +195,33 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
     }
 
-    private boolean isRightPressed = false;
-    private boolean isLeftPressed = false;
+    private void handlePlayerDeath() {
+        isRunning = false;
+
+        // 跳转到结算界面
+        Intent intent = new Intent(getContext(), GameOverActivity.class);
+        intent.putExtra("score", score); // 传递当前分数
+        getContext().startActivity(intent);
+
+        // 关闭游戏Activity
+        ((Activity) getContext()).finish();
+    }
+
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        int action = event.getAction();
-        float touchX = event.getX();
-        float touchY = event.getY();
-
-        switch (action) {
+        switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
-                // 检测按下的是哪个按钮
-                if (leftButton.contains((int) touchX, (int) touchY)) {
-                    isLeftPressed = true;
-                    player.moveLeft();
-                } else if (rightButton.contains((int) touchX, (int) touchY)) {
-                    isRightPressed = true;
-                    player.moveRight();
-                }else if (jumpButton.contains((int) touchX, (int) touchY)) {
-                    player.jump(); // 跳跃立即触发
-                }
-                return true;
-                    case MotionEvent.ACTION_POINTER_DOWN:
-                if (jumpButton.contains((int) touchX, (int) touchY)) {
-                    player.jump(); // 跳跃立即触发
-                }
-                return true;
-
-            case MotionEvent.ACTION_MOVE:
-                // 处理多点触摸时的移动状态更新
-                for (int i = 0; i < event.getPointerCount(); i++) {
-                    float moveX = event.getX(i);
-                    float moveY = event.getY(i);
-
-                    if (leftButton.contains((int) moveX, (int) moveY)) {
-                        isLeftPressed = true;
-                        isRightPressed = false;
-                        player.moveLeft();
-                    } else if (rightButton.contains((int) moveX, (int) moveY)) {
-                        isRightPressed = true;
-                        isLeftPressed = false;
-                        player.moveRight();
-                    }
-                    if (jumpButton.contains((int) touchX, (int) touchY)) {
-                        player.jump(); // 跳跃立即触发
-                    }
-                }
+                // 按下时开始蓄力（无论按在屏幕哪个位置）
+                player.startCharge();
                 return true;
 
             case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_POINTER_UP:
-                // 松开时检查哪个按钮被释放
-                if (leftButton.contains((int) touchX, (int) touchY)) {
-                    isLeftPressed = false;
-                } else if (rightButton.contains((int) touchX, (int) touchY)) {
-                    isRightPressed = false;
-                }
-
-                // 如果左右按钮都释放，才停止移动
-                if (!isLeftPressed && !isRightPressed) {
-                    player.stopMoving();
-                }
+                // 松开时执行跳跃
+                player.releaseJump();
                 return true;
         }
-        return super.onTouchEvent(event);
-
+        return false;
     }
 
 
@@ -239,9 +231,23 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
                 player.landOnPlatform(platform.getY());
                 currentPlatform = platform; // 记录当前平台
                 generatePlatforms();
+                // 基础得分（每次着陆都加）
+                if (!platform.equals(lastPlatform)) {
+                    handleScore(1);
+                    lastPlatform = platform;
+                    platform.setLandedTime(System.currentTimeMillis());
+                }
+
+                // 特殊平台额外得分
+                if (platform.checkBonusEarned() && !platform.isBonusGiven()) {
+                    handleScore(platform.getType().bonusScore);
+                    platform.markBonusGiven();
+                }
+
             }
         }
     }
+
     private boolean isPlatformOverlapping(int newX, int newY, int newWidth) {
         // 新平台的矩形范围
         Rect newRect = new Rect(newX, newY, newX + newWidth, newY + 50);
@@ -282,7 +288,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             Strawberry strawberry = iterator.next();
             if (strawberry.checkCollision(player, cameraX, cameraY)) {
                 strawberry.collect();
-                score++;
+                handleScore(5);
                 iterator.remove();
             }
         }
@@ -291,15 +297,26 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         if (currentPlatform != null && !currentPlatform.hasGenerated()){
 
             Random rand = new Random();
+            PlatformType type = PlatformType.NORMAL;
+            // 5%概率生成特殊平台
+            float chance = rand.nextFloat();
+            if (chance < 0.15f) {
+                PlatformType[] specialTypes = {
+                        PlatformType.GOLD,
+                        PlatformType.DIAMOND,
+                        PlatformType.RAINBOW
+                };
+                type = specialTypes[rand.nextInt(3)];
+            }
             int rightX = 0, rightY = 0;
 
             // 生成候选位置
-            rightX = currentPlatform.getX() + rand.nextInt(200) + 200; // 横向随机：+300~+700
-            rightY = currentPlatform.getY() - (rand.nextInt(300) - 100); // 垂直随机：上移200~500像素
+            rightX = currentPlatform.getX() + rand.nextInt(300) + 300; // 横向随机：+300~+700
+            rightY = currentPlatform.getY() - (rand.nextInt(200) - 100); // 垂直随机：上移200~500像素
 
             // 检查是否重叠且位于屏幕内
             if (!isPlatformOverlapping(rightX, rightY, 200) ) {
-                Platform newplatform = new Platform(rightX, rightY, 200);
+                Platform newplatform = new Platform(rightX, rightY, rand.nextInt(200) + 75, type);
                 platforms.add(newplatform);
                 generateStrawberry(newplatform);
                 currentPlatform.setHasGenerated(true);

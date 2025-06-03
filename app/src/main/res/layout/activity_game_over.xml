@@ -1,0 +1,33 @@
+<!-- res/layout/activity_game_over.xml -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="#CC000000"> <!-- 半透明黑色背景 -->
+
+    <TextView
+        android:id="@+id/tv_score"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="36sp"
+        android:textColor="#FFFFFF"
+        android:text="得分: 0"/>
+
+    <Button
+        android:id="@+id/btn_restart"
+        android:layout_width="200dp"
+        android:layout_height="60dp"
+        android:text="重新开始"
+        android:layout_marginTop="40dp"
+/>
+
+    <Button
+        android:id="@+id/btn_exit"
+        android:layout_width="200dp"
+        android:layout_height="60dp"
+        android:text="退出游戏"
+        android:layout_marginTop="20dp"
+        />
+</LinearLayout>
