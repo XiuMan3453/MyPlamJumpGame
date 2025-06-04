@@ -1,5 +1,7 @@
 package com.example.myplamjumpgame;
 
+import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -10,14 +12,12 @@ public class Player {
     private float velocityY;
     private static final int MOVE_SPEED = 10;
     private boolean isJumping = false;
-    private static final int GRAVITY = 1;
-    private static final int ZULI = 1;
-    private static final int JUMP_FORCE = -25;
-
+    private static final float GRAVITY = 1.5F;
+    private static final float ZULI = 1.2F;
+//    private static final int JUMP_FORCE = -25;
     private boolean isCharging = false;
     private long chargeStartTime = 0;
     private float jumpPower = 0;
-
     private float movePower = 0;
     private static final float MAX_JUMP_POWER = 30f; // 最大蓄力值
     private static final float CHARGE_RATE = 0.06f;   // 蓄力速度系数
@@ -25,10 +25,13 @@ public class Player {
     private static final float MOVE_RATE = 0.05f;
     private static final float MAX_MOVE_POWER = 30f; // 最大蓄力值
     private boolean isAlive = true;
+    private CharacterAnimator animator;
+    private boolean isMoving = false;
 
-    public Player(int startX, int startY) {
+    public Player(int startX, int startY, Context context) {
         x = startX;
         y = startY;
+        this.animator = new CharacterAnimator(context.getResources());
     }
 
     public void startCharge() {
@@ -63,6 +66,18 @@ public class Player {
         velocityY += GRAVITY;
         y += velocityY;
 
+        // 动画状态机
+        if (velocityY < -2) { // 上升阶段
+            animator.setState(CharacterAnimator.AnimState.JUMP);
+            isJumping = true;
+        }
+        else if (velocityY > 2 || isJumping) { // 下落阶段
+            animator.setState(CharacterAnimator.AnimState.FALL);
+        }else {
+            animator.setState(CharacterAnimator.AnimState.IDLE);
+        }
+
+
         // 地面检测（示例值，需根据实际屏幕高度调整）
         if (y > 1000) {
             y = 1000;
@@ -80,13 +95,24 @@ public class Player {
     }
 
     public void draw(Canvas canvas, float cameraX, float cameraY) {
-        Paint paint = new Paint();
-        paint.setColor(Color.BLUE);
-        // 屏幕坐标 = 世界坐标 - 相机偏移
-        float screenX = getX() - cameraX;
-        float screenY = getY() - cameraY;
-        canvas.drawRect(screenX, screenY, screenX + 100, screenY + 100, paint);
+        Bitmap currentFrame = animator.getCurrentFrame();
+
+        // 计算绘制坐标（考虑锚点）
+        float screenX = getX() - cameraX - 20; // 水平居中
+        float screenY = getY() - cameraY - currentFrame.getHeight()/2 - 10;  // 底部对齐
+
+        // 绘制动画帧
+        canvas.drawBitmap(currentFrame, screenX, screenY, null);
     }
+
+    //   public void draw(Canvas canvas, float cameraX, float cameraY) {
+  //      Paint paint = new Paint();
+  //      paint.setColor(Color.BLUE);
+  //      // 屏幕坐标 = 世界坐标 - 相机偏移
+   //     float screenX = getX() - cameraX;
+   //     float screenY = getY() - cameraY;
+    //    canvas.drawRect(screenX, screenY, screenX + 100, screenY + 100, paint);
+   // }
     public void die() {
         isAlive = false;
         velocityY = 0;

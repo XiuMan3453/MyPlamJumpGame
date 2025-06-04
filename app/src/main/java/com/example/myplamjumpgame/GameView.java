@@ -3,11 +3,16 @@ package com.example.myplamjumpgame;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.media.MediaPlayer;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -41,6 +46,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
     private List<ScoreEffect> scoreEffects = new ArrayList<>();
 
+    private MediaPlayer bgmPlayer;
+    private Bitmap staticBackground;
+
     public GameView(Context context, AttributeSet attrs) {
         super(context, attrs);
         holder = getHolder();
@@ -64,10 +72,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         // 初始位置根据相机偏移计算
         int startX = (int) (TARGET_X_OFFSET);
         int startY = (int) (TARGET_Y_OFFSET);
-        player = new Player(startX, startY);
+        initBGM();
+        startBGM();
+        loadBackground();
+        player = new Player(startX, startY, getContext());
         platforms = new ArrayList<>();
         PlatformType type = PlatformType.NORMAL;
         platforms.add(new Platform(startX, startY + 50, 200, type)); // 初始平台
+
     }
 
     @Override
@@ -114,10 +126,59 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         if (player.getY() > getHeight() - 250) {
             handlePlayerDeath();
+            releaseBGM();
             return;
         }
 
     }
+
+    private void loadBackground() {
+        // 加载全屏静态背景
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inScaled = false; // 禁用自动缩放
+        staticBackground = BitmapFactory.decodeResource(
+                getResources(),
+                R.drawable.background,
+                options
+        );
+    }
+    private void drawBackground(Canvas canvas) {
+        // 直接绘制全屏背景
+        Matrix matrix = new Matrix();
+        float scale = Math.max(
+                (float)getWidth() / staticBackground.getWidth(),
+                (float)getHeight() / staticBackground.getHeight()
+        );
+        matrix.setScale(scale, scale);
+        matrix.postTranslate(
+                (getWidth() - staticBackground.getWidth() * scale) / 2,
+                (getHeight() - staticBackground.getHeight() * scale) / 2
+        );
+        canvas.drawBitmap(staticBackground, matrix, null);
+//        canvas.drawBitmap(staticBackground, 0, 0, null);
+    }
+    private void initBGM() {
+        // 初始化MediaPlayer
+        bgmPlayer = MediaPlayer.create(getContext(), R.raw.bgm);
+        bgmPlayer.setLooping(true); // 循环播放
+        bgmPlayer.setVolume(0.3f, 0.3f); // 左右声道音量（0-1）
+    }
+
+    // 在游戏开始时调用
+    public void startBGM() {
+        if (bgmPlayer != null && !bgmPlayer.isPlaying()) {
+            bgmPlayer.start();
+        }
+    }
+
+    // 在游戏结束时释放资源
+    private void releaseBGM() {
+        if (bgmPlayer != null) {
+            bgmPlayer.release();
+            bgmPlayer = null;
+        }
+    }
+
 
     // 添加新特效
     private void addScoreEffect(int score, int color) {
@@ -169,6 +230,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         Canvas canvas = holder.lockCanvas();
         canvas.drawColor(Color.WHITE); // 清空背景
+        drawBackground(canvas);
 
         // 绘制玩家和平台
         player.draw(canvas, cameraX, cameraY);
@@ -180,7 +242,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
         // 绘制分数
         Paint scorePaint = new Paint();
-        scorePaint.setColor(Color.BLACK);
+        scorePaint.setColor(Color.GREEN);
         scorePaint.setTextSize(80);
         canvas.drawText("分数: " + score, 50, 100, scorePaint);
         drawScoreEffects(canvas);
