@@ -1,25 +1,46 @@
 package com.example.myplamjumpgame;
 
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 
 public class Strawberry {
     private int x, y;
     private boolean isCollected = false;
+
+    private Bitmap strawberryBitmap;
     private static final int SIZE = 50; // 草莓大小
 
-    public Strawberry(int x, int y) {
+    public Strawberry(int x, int y, Context context) {
         this.x = x;
         this.y = y;
+        // 加载位图
+        strawberryBitmap = BitmapFactory.decodeResource(
+                context.getResources(),
+                R.drawable.star
+        );
     }
 
     public void draw(Canvas canvas, float cameraX, float cameraY) {
         if (!isCollected) {
-            Paint paint = new Paint();
-            paint.setColor(Color.RED);
-            // 绘制圆形草莓（实际游戏可替换为Bitmap）
-            canvas.drawCircle(x - cameraX, y - cameraY, SIZE / 2, paint);
+         //   float drawX = x - cameraX - strawberryBitmap.getWidth()/2f;
+         //   float drawY = y - cameraY - strawberryBitmap.getHeight()/2f;
+         //   canvas.drawBitmap(strawberryBitmap, drawX, drawY, null);
+            // 目标尺寸（调整为原图的50%）
+            float targetWidth = strawberryBitmap.getWidth() * 0.25f;
+            float targetHeight = strawberryBitmap.getHeight() * 0.25f;
+
+            Matrix matrix = new Matrix();
+            matrix.postScale(0.25f, 0.25f); // 缩放系数
+            matrix.postTranslate(
+                    x - cameraX - targetWidth/2,
+                    y - cameraY - targetHeight/2
+            );
+            canvas.drawBitmap(strawberryBitmap, matrix, null);
         }
     }
 

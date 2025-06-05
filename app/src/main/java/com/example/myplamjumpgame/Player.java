@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.media.SoundPool;
 
 public class Player {
     private float x, y;
@@ -51,6 +52,7 @@ public class Player {
             velocityY = -jumpPower;
             velocityX = movePower;
             isCharging = false;
+
         }
     }
 

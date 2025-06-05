@@ -10,7 +10,10 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.media.SoundPool;
+import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -179,7 +182,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
     }
 
-
     // 添加新特效
     private void addScoreEffect(int score, int color) {
         String text = "+" + score;
@@ -338,7 +340,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
             int offsetX = rand.nextBoolean() ? -50 : platform.getWidth() + 50;
             strawberries.add(new Strawberry(
                     platform.getX() + offsetX,
-                    platform.getY() - 100 // 平台上方100像素
+                    platform.getY() - 100,
+                    getContext()// 平台上方100像素
             ));
         }
     }
