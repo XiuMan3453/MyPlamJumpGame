@@ -19,7 +19,7 @@ public class GameOverActivity extends AppCompatActivity {
         // 获取传递的分数
         int score = getIntent().getIntExtra("score", 0);
         TextView tvScore = findViewById(R.id.tv_score);
-        tvScore.setText("得分: " + score);
+        tvScore.setText("scroe: " + score);
 
         // 重新开始按钮
         findViewById(R.id.btn_restart).setOnClickListener(v -> {

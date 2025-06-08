@@ -32,8 +32,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
     private Thread gameThread;
     private SurfaceHolder holder;
     private boolean isRunning = false;
-    // 按键区域定义
-
     private Player player;
     private List<Platform> platforms;
     private Platform currentPlatform; // 当前玩家所在的平台
@@ -75,8 +73,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         // 初始位置根据相机偏移计算
         int startX = (int) (TARGET_X_OFFSET);
         int startY = (int) (TARGET_Y_OFFSET);
-        initBGM();
-        startBGM();
+//        initBGM();
+//        startBGM();
         loadBackground();
         player = new Player(startX, startY, getContext());
         platforms = new ArrayList<>();
@@ -129,7 +127,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
 
         if (player.getY() > getHeight() - 250) {
             handlePlayerDeath();
-            releaseBGM();
+//            releaseBGM();
             return;
         }
 
@@ -160,27 +158,26 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         canvas.drawBitmap(staticBackground, matrix, null);
 //        canvas.drawBitmap(staticBackground, 0, 0, null);
     }
-    private void initBGM() {
-        // 初始化MediaPlayer
-        bgmPlayer = MediaPlayer.create(getContext(), R.raw.bgm);
-        bgmPlayer.setLooping(true); // 循环播放
-        bgmPlayer.setVolume(0.3f, 0.3f); // 左右声道音量（0-1）
-    }
+//    private void initBGM() {
+//        // 初始化MediaPlayer
+//        bgmPlayer = MediaPlayer.create(getContext(), R.raw.bgm);
+//        bgmPlayer.setLooping(true); // 循环播放
+//        bgmPlayer.setVolume(0.3f, 0.3f); // 左右声道音量（0-1）
+ //   }
 
     // 在游戏开始时调用
-    public void startBGM() {
-        if (bgmPlayer != null && !bgmPlayer.isPlaying()) {
-            bgmPlayer.start();
-        }
-    }
+//    public void startBGM() {
+//        if (bgmPlayer != null && !bgmPlayer.isPlaying()) {
+//            bgmPlayer.start();
+//        }
+//    }
 
     // 在游戏结束时释放资源
-    private void releaseBGM() {
-        if (bgmPlayer != null) {
-            bgmPlayer.release();
-            bgmPlayer = null;
-        }
-    }
+//    private void releaseBGM() {
+//        if (bgmPlayer != null) {
+//            bgmPlayer.release();
+//            bgmPlayer = null;
+//        }//   }
 
     // 添加新特效
     private void addScoreEffect(int score, int color) {
@@ -244,7 +241,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback, Run
         }
         // 绘制分数
         Paint scorePaint = new Paint();
-        scorePaint.setColor(Color.GREEN);
+        scorePaint.setColor(Color.BLACK);
         scorePaint.setTextSize(80);
         canvas.drawText("分数: " + score, 50, 100, scorePaint);
         drawScoreEffects(canvas);
